@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Brasas.lp">
+  <defs>
+    <radialGradient id="e" cx="50%" cy="72%" r="62%">
+      <stop offset="0%" stop-color="#ffd08a"/>
+      <stop offset="45%" stop-color="#e8834b"/>
+      <stop offset="100%" stop-color="#a83c18"/>
+    </radialGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#12100e"/>
+  <path fill="url(#e)" d="M32 9c1.6 7.3-2.3 10.6-5.6 13.9-3.7 3.7-7.4 7.5-7.4 14.1C19 45.8 24.8 51 32 51s13-5.2 13-14c0-5.2-2.2-8.4-4.9-11.6-.6 2.2-2 3.6-3.6 4.2 1-6.6-1-13.4-4.5-20.6Z"/>
+  <path fill="#12100e" opacity=".55" d="M32 51c-3.9 0-6.7-2.8-6.7-6.6 0-4.3 3.6-6 6.7-11 3.1 5 6.7 6.7 6.7 11 0 3.8-2.8 6.6-6.7 6.6Z"/>
+  <g stroke="#f4ede3" stroke-width="2.6" stroke-linecap="round" opacity=".9">
+    <path d="M13 56h38"/>
+  </g>
+</svg>

@@ -1,0 +1,14 @@
+# Estado local de herramientas
+.claude/
+
+# Windows / OneDrive
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*.tmp
+
+# macOS
+.DS_Store
+
+# Por si más adelante se agrega alguna dependencia
+node_modules/

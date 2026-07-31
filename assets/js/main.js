@@ -31,11 +31,78 @@
   };
   document.querySelectorAll('.frame img, .slide__img img').forEach(fadeIn);
 
+  /* ============================================================
+     ¿Está abierto ahora?
+     Horario real: jueves, viernes y sábado de 12 a 16.
+     Se calcula en hora de Argentina, no en la del visitante, para que
+     diga la verdad aunque lo miren desde otro huso.
+     ⚠ Si cambia el horario hay que tocarlo acá y en el JSON-LD del <head>.
+     ============================================================ */
+  const HORARIO = { dias: [4, 5, 6], abre: 12, cierra: 16 }; // 0 = domingo
+  const NOMBRE_DIA = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+
+  const ahoraEnBuenosAires = () => {
+    const partes = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Argentina/Buenos_Aires',
+      weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false,
+    }).formatToParts(new Date());
+    const v = (t) => partes.find((p) => p.type === t)?.value;
+    const dias = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+    const hora = Number(v('hour')) % 24;
+    return { dia: dias[v('weekday')], minutos: hora * 60 + Number(v('minute')) };
+  };
+
+  const estadoDelLocal = () => {
+    const { dia, minutos } = ahoraEnBuenosAires();
+    if (dia === undefined) return null;
+
+    const abre = HORARIO.abre * 60;
+    const cierra = HORARIO.cierra * 60;
+
+    if (HORARIO.dias.includes(dia) && minutos >= abre && minutos < cierra) {
+      const faltan = cierra - minutos;
+      return {
+        abierto: true,
+        texto: faltan <= 45
+          ? `Cierra en ${faltan} min`
+          : `Abierto ahora · hasta las ${HORARIO.cierra}`,
+      };
+    }
+
+    // el próximo día de apertura, empezando por hoy si todavía no abrió
+    for (let i = 0; i < 8; i++) {
+      const d = (dia + i) % 7;
+      if (!HORARIO.dias.includes(d)) continue;
+      if (i === 0 && minutos >= abre) continue; // hoy ya cerró
+      if (i === 0) return { abierto: false, texto: `Cerrado · abre hoy ${HORARIO.abre} h` };
+      if (i === 1) return { abierto: false, texto: `Cerrado · abre mañana ${HORARIO.abre} h` };
+      return { abierto: false, texto: `Cerrado · abre el ${NOMBRE_DIA[d]} ${HORARIO.abre} h` };
+    }
+    return null;
+  };
+
+  const pintarEstado = () => {
+    const estado = estadoDelLocal();
+    document.querySelectorAll('[data-estado]').forEach((el) => {
+      if (!estado) { el.hidden = true; return; }
+      el.querySelector('[data-estado-texto]').textContent = estado.texto;
+      el.dataset.abierto = estado.abierto ? 'si' : 'no';
+      el.hidden = false;
+    });
+  };
+
+  try {
+    pintarEstado();
+    setInterval(pintarEstado, 60000); // por si la pestaña queda abierta
+  } catch { /* si algo falla, los carteles quedan ocultos */ }
+
   /* ---------- Aparición al hacer scroll ---------- */
   const revealables = document.querySelectorAll('.reveal');
   revealables.forEach((el) => {
     const d = el.dataset.delay;
     if (d) el.style.setProperty('--d', d);
+    // escalona los renglones de los títulos que se revelan por línea
+    el.querySelectorAll(':scope > .line').forEach((linea, i) => linea.style.setProperty('--l', i));
   });
 
   if (reduced.matches || !('IntersectionObserver' in window)) {
@@ -71,7 +138,8 @@
   const elCurrent = document.querySelector('[data-carousel-current]');
   const elTotal = document.querySelector('[data-carousel-total]');
   const caption = document.getElementById('carousel-caption');
-  const dotsBox = document.querySelector('.gallery__dots');
+  const thumbsBox = document.querySelector('.gallery__thumbs');
+  const dragcur = root.querySelector('[data-dragcur]');
   const bar = root.querySelector('[data-carousel-progress]');
   const DUR = Number(root.dataset.interval) || 4800;
   root.style.setProperty('--dur', DUR + 'ms');
@@ -110,10 +178,15 @@
     const i = logical();
     if (elCurrent) elCurrent.textContent = String(i + 1);
 
-    slides.forEach((s, k) => s.setAttribute('aria-hidden', k === i ? 'false' : 'true'));
+    slides.forEach((s, k) => {
+      s.setAttribute('aria-hidden', k === i ? 'false' : 'true');
+      s.classList.toggle('is-active', k === i);
+    });
+    // el clon comparte el estado de la primera para que la deriva no se corte
+    clone.classList.toggle('is-active', i === 0);
 
-    if (dotsBox) {
-      Array.from(dotsBox.children).forEach((d, k) => {
+    if (thumbsBox) {
+      Array.from(thumbsBox.children).forEach((d, k) => {
         if (k === i) d.setAttribute('aria-current', 'true');
         else d.removeAttribute('aria-current');
       });
@@ -175,18 +248,29 @@
   btnNext?.addEventListener('click', () => { next(); restart(); });
   btnPrev?.addEventListener('click', () => { prev(); restart(); });
 
-  if (dotsBox) {
+  if (thumbsBox) {
     if (elTotal) elTotal.textContent = String(total);
-    slides.forEach((_, k) => {
+    slides.forEach((slide, k) => {
       const b = document.createElement('button');
       b.type = 'button';
       b.setAttribute('aria-label', `Ir a la foto ${k + 1} de ${total}`);
+
+      // se clona el <picture> tal cual: el navegador elige el mismo archivo
+      // que la foto grande, así que la miniatura no descarga nada extra
+      const pic = slide.querySelector('picture')?.cloneNode(true);
+      if (pic) {
+        const img = pic.querySelector('img');
+        img.removeAttribute('loading');
+        img.alt = '';
+        b.appendChild(pic);
+      }
+
       b.addEventListener('click', () => {
         if (k === logical()) return;
         goTo(k);
         restart();
       });
-      dotsBox.appendChild(b);
+      thumbsBox.appendChild(b);
     });
   }
 
@@ -227,11 +311,33 @@
     visible ? (play(), restartProgress()) : stop();
   }, { threshold: 0.25, rootMargin: '400px 0px' }).observe(root);
 
+  /* ---------- Cursor propio (solo mouse) ---------- */
+  if (dragcur && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    let pendiente = null;
+    const mover = (e) => {
+      const r = root.getBoundingClientRect();
+      pendiente = [e.clientX - r.left, e.clientY - r.top];
+      requestAnimationFrame(() => {
+        if (!pendiente) return;
+        dragcur.style.translate = `${pendiente[0]}px ${pendiente[1]}px`;
+        pendiente = null;
+      });
+    };
+    frame.addEventListener('pointerenter', (e) => {
+      if (e.pointerType !== 'mouse') return;
+      mover(e);
+      root.classList.add('is-hovered');
+    });
+    frame.addEventListener('pointermove', mover, { passive: true });
+    frame.addEventListener('pointerleave', () => root.classList.remove('is-hovered'));
+  }
+
   /* ---------- Arrastre / swipe ---------- */
   frame.addEventListener('pointerdown', (e) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     dragging = true; axis = null; deltaX = 0;
     startX = e.clientX; startY = e.clientY;
+    root.classList.add('is-dragging');
     stop();
     track.classList.remove('is-animating');
     bar?.classList.remove('is-running');
@@ -256,6 +362,7 @@
   });
 
   const endDrag = () => {
+    root.classList.remove('is-dragging');
     if (!dragging) return;
     dragging = false;
     const threshold = Math.min(90, width * 0.16);

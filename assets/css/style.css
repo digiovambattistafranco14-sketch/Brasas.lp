@@ -100,6 +100,27 @@
 
   .wrap { width: min(100% - var(--gut) * 2, var(--wrap)); margin-inline: auto; }
 
+  /* Barra de avance de lectura. Animación ligada al scroll: cero JavaScript.
+     Donde el navegador no la soporta, sencillamente no aparece. */
+  .progress {
+    position: fixed; inset: 0 0 auto 0;
+    height: 2px; z-index: 80;
+    transform-origin: left;
+    background: linear-gradient(90deg, var(--ember-deep), var(--ember), var(--ember-lite));
+    opacity: 0;
+  }
+  @supports (animation-timeline: scroll()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .progress {
+        opacity: 1;
+        scale: 0 1;
+        animation: avance linear both;
+        animation-timeline: scroll(root block);
+      }
+      @keyframes avance { to { scale: 1 1; } }
+    }
+  }
+
   /* JetBrains Mono ya es ancha: menos tracking que con la mono anterior */
   .kicker, .num {
     font-family: var(--f-mono);
@@ -143,6 +164,16 @@
   .btn--ghost:hover { border-color: var(--bone); transform: translateY(-2px); }
 
   .btn--lg { --pad: .95rem 1.7rem; font-size: 1rem; }
+
+  /* la flecha sale y vuelve a entrar por el otro lado */
+  .btn--arrow { overflow: hidden; }
+  .ico--arrow {
+    width: 1.1em; height: 1.1em; flex: none;
+    fill: none; stroke: currentColor; stroke-width: 1.8;
+    stroke-linecap: round; stroke-linejoin: round;
+    transition: transform .45s var(--ease-out);
+  }
+  .btn--arrow:hover .ico--arrow { transform: translateX(.3rem); }
   .btn--xl { --pad: 1.1rem 2.2rem; font-size: clamp(1rem, .9rem + .5vw, 1.25rem); font-family: var(--f-mono); font-weight: 700; letter-spacing: .01em; }
 }
 
@@ -236,7 +267,7 @@
   .hero__title {
     font-family: var(--f-display);
     font-weight: var(--display-weight);
-    font-size: clamp(2.65rem, 1rem + 7.3vw, 6.2rem);
+    font-size: clamp(2.3rem, .85rem + 7vw, 6.2rem);
     line-height: .92;
     letter-spacing: -.034em;
     margin: 1rem 0 1.6rem;
@@ -268,6 +299,48 @@
     padding: .35rem .8rem;
   }
 
+  /* — estado abierto / cerrado, calculado con el horario real — */
+  .estado {
+    display: inline-flex; align-items: baseline; gap: .5rem;
+    max-width: 100%;
+  }
+  .estado__dot { align-self: center; }
+  /* sin JS nunca se muestra: mejor nada que un horario equivocado */
+  .estado[hidden] { display: none; }
+  .hero__tags .estado {
+    border-color: color-mix(in oklab, var(--chimi) 45%, transparent);
+    background: color-mix(in oklab, var(--chimi) 11%, transparent);
+    color: var(--bone);
+  }
+  .hero__tags .estado[data-abierto="no"] {
+    border-color: var(--rule);
+    background: none;
+    color: var(--bone-dim);
+  }
+  .estado__dot {
+    width: 7px; height: 7px; border-radius: 50%; flex: none;
+    background: var(--bone-dim);
+  }
+  .estado[data-abierto="si"] .estado__dot {
+    background: var(--chimi);
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--chimi) 70%, transparent);
+    animation: latido 2.4s var(--ease-out) infinite;
+  }
+  @keyframes latido {
+    0%   { box-shadow: 0 0 0 0 color-mix(in oklab, var(--chimi) 60%, transparent); }
+    70%, 100% { box-shadow: 0 0 0 7px transparent; }
+  }
+
+  .datos__item p.estado--bloque {
+    margin-top: .85rem;
+    font-family: var(--f-mono);
+    font-weight: 500;
+    font-size: .7rem; line-height: 1.4; letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--bone-dim);
+  }
+  .datos__item p.estado--bloque[data-abierto="si"] { color: var(--chimi); }
+
   .hero__local {
     margin-top: 1.4rem;
     font-size: .92rem;
@@ -282,6 +355,10 @@
     transition: text-decoration-color .3s, color .3s;
   }
   .hero__local a:hover { color: var(--ember-lite); text-decoration-color: var(--ember); }
+
+  /* sin esto, una línea del título más ancha que la pantalla estira la columna
+     de la grilla y empuja todo el hero (min-width:auto es el valor por defecto) */
+  .hero__copy { min-width: 0; }
 
   .hero__media { position: relative; }
   .hero__cap {
@@ -312,7 +389,7 @@
   }
   /* <picture> es inline por defecto: sin esto la foto no llena el marco
      y se ve asomar la miniatura borrosa del fondo */
-  .frame picture, .slide__img picture { display: block; width: 100%; height: 100%; }
+  .frame picture, .slide__img picture, .gallery__thumbs picture { display: block; width: 100%; height: 100%; }
 
   .frame img {
     width: 100%; height: 100%; object-fit: cover;
@@ -326,6 +403,21 @@
   }
   @media (min-width: 900px) {
     .frame--tilt { aspect-ratio: 4 / 4.6; }
+  }
+
+  /* la foto del hero se mueve un poco menos que la página: da profundidad */
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) and (min-width: 900px) {
+      .frame--tilt img {
+        animation: profundidad linear both;
+        animation-timeline: view();
+        animation-range: entry 0% exit 100%;
+      }
+      @keyframes profundidad {
+        from { transform: scale(1.14) translateY(-2.6%); }
+        to   { transform: scale(1.14) translateY(2.6%); }
+      }
+    }
   }
 }
 
@@ -458,20 +550,28 @@
   .gallery__count .sep { margin-inline: .35em; opacity: .5; }
   .gallery__count [data-carousel-current] { color: var(--bone); }
 
-  .gallery__dots { display: flex; gap: .2rem; margin-top: 1.1rem; }
-  /* barra fina pero con área de toque cómoda (44 px de alto) */
-  .gallery__dots button {
-    width: 2.6rem; height: 44px;
-    display: grid; align-items: center;
+  /* — miniaturas: se ve de antemano lo que viene, mejor que unos puntitos — */
+  .gallery__thumbs { display: flex; gap: .5rem; margin-top: 1.4rem; }
+  .gallery__thumbs button {
+    position: relative;
+    width: 3.4rem; aspect-ratio: 4 / 5;
+    border-radius: 2px; overflow: hidden;
+    filter: grayscale(.55) brightness(.6);
+    transition: filter .4s var(--ease), transform .4s var(--ease-out);
   }
-  .gallery__dots button::before {
+  .gallery__thumbs button::after {
     content: "";
-    height: 2px; border-radius: 2px;
-    background: rgba(244,237,227,.22);
-    transition: background-color .35s, transform .35s var(--ease-out);
+    position: absolute; inset: 0;
+    box-shadow: inset 0 0 0 1px rgba(244,237,227,.18);
+    transition: box-shadow .4s var(--ease);
   }
-  .gallery__dots button:hover::before { background: rgba(244,237,227,.5); transform: scaleY(2.2); }
-  .gallery__dots button[aria-current]::before { background: var(--ember); transform: scaleY(2.2); }
+  .gallery__thumbs img { width: 100%; height: 100%; object-fit: cover; }
+  .gallery__thumbs button:hover { filter: none; transform: translateY(-3px); }
+  .gallery__thumbs button[aria-current] { filter: none; }
+  .gallery__thumbs button[aria-current]::after { box-shadow: inset 0 0 0 2px var(--ember); }
+  @media (max-width: 420px) {
+    .gallery__thumbs button { width: 2.9rem; }
+  }
 
   /* — carrusel — */
   .carousel { position: relative; }
@@ -525,6 +625,105 @@
     animation-duration: var(--dur, 4800ms);
   }
   @keyframes fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+  /* deriva lentísima sobre la foto activa: la imagen deja de estar quieta */
+  @media (prefers-reduced-motion: no-preference) {
+    .slide.is-active .slide__img img {
+      animation: deriva calc(var(--dur, 4800ms) * 2.4) ease-out both;
+    }
+    @keyframes deriva {
+      from { transform: scale(1); }
+      to   { transform: scale(1.055); }
+    }
+  }
+
+  /* — cursor propio sobre el carrusel (solo con mouse) — */
+  .dragcur { display: none; }
+  @media (hover: hover) and (pointer: fine) {
+    .carousel__frame { cursor: none; }
+    .dragcur {
+      display: grid; place-items: center;
+      position: absolute; top: 0; left: 0;
+      width: 5.4rem; height: 5.4rem;
+      margin: -2.7rem 0 0 -2.7rem;
+      border-radius: 50%;
+      background: color-mix(in oklab, var(--ember) 88%, transparent);
+      backdrop-filter: blur(2px);
+      pointer-events: none; z-index: 3;
+      opacity: 0;
+      /* la posición va en `translate` y el tamaño en `scale`, propiedades
+         independientes: así el JS mueve el cursor sin pisar la animación */
+      scale: .4;
+      transition: opacity .3s var(--ease), scale .45s var(--ease-out);
+    }
+    .dragcur span {
+      font-family: var(--f-mono);
+      font-size: .62rem; font-weight: 700;
+      letter-spacing: .12em; text-transform: uppercase;
+      color: #fff;
+    }
+    .carousel.is-hovered .dragcur { opacity: 1; scale: 1; }
+    .carousel.is-hovered.is-dragging .dragcur { scale: .84; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .dragcur { transition: none; }
+  }
+}
+
+/* ---------- 8b. Banda de declaración ---------- */
+@layer layout {
+  .statement {
+    position: relative;
+    padding-block: clamp(4rem, 9vw, 7.5rem);
+    border-top: 1px solid var(--rule);
+    overflow: hidden;
+  }
+  .statement::before {
+    content: "";
+    position: absolute; inset: 0;
+    background: radial-gradient(46% 120% at 72% 50%, rgba(212,86,42,.2), transparent 70%);
+    pointer-events: none;
+  }
+  .statement__inner {
+    position: relative;
+    display: grid;
+    gap: 1.4rem;
+  }
+  @media (min-width: 820px) {
+    .statement__inner { grid-template-columns: minmax(0, 13rem) minmax(0, 1fr); gap: 2.5rem; align-items: start; }
+    /* desnivel a propósito: la frase no arranca donde arranca la etiqueta */
+    .statement__text { padding-top: .35em; }
+  }
+  .statement__label {
+    font-family: var(--f-mono);
+    font-size: .7rem; font-weight: 500; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--bone-dim);
+    padding-top: .5em;
+  }
+  .statement__label span { color: var(--chimi); margin-right: .3em; }
+  .statement__text {
+    font-family: var(--f-display);
+    font-weight: var(--display-weight);
+    font-size: clamp(2.2rem, 1.1rem + 4.6vw, 4.9rem);
+    line-height: .95;
+    letter-spacing: -.032em;
+  }
+  .statement__text em { font-style: normal; color: var(--ember-lite); }
+
+  /* leve deriva lateral atada al scroll, donde el navegador la soporte */
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) and (min-width: 820px) {
+      .statement__text {
+        animation: deriva-x linear both;
+        animation-timeline: view();
+        animation-range: entry 10% exit 90%;
+      }
+      @keyframes deriva-x {
+        from { transform: translateX(-2.2rem); }
+        to   { transform: translateX(2.2rem); }
+      }
+    }
+  }
 }
 
 /* ---------- 9. Carta (bloque claro) ---------- */
@@ -575,6 +774,12 @@
     font-style: normal;
     font-size: .87rem;
     color: #7a6c5d;
+  }
+  @media (hover: hover) {
+    .menu li { transition: transform .4s var(--ease-out); }
+    .menu li span { transition: color .3s; }
+    .menu li:hover { transform: translateX(5px); }
+    .menu li:hover span { color: var(--ember-deep); }
   }
 
   .menu__foot {
@@ -748,10 +953,22 @@
   }
   .reveal.is-in { opacity: 1; transform: none; }
 
+  /* Revelado por líneas: cada renglón sube desde detrás de su propio recorte,
+     como si lo destaparan. El bloque en sí no se desvanece. */
+  .reveal--lines { opacity: 1; transform: none; transition: none; }
+  .reveal--lines .line { display: block; overflow: hidden; padding-bottom: .06em; }
+  .reveal--lines .line > span {
+    display: block;
+    transform: translateY(108%);
+    transition: transform 1.05s var(--ease-out) calc(var(--l, 0) * 110ms + 120ms);
+  }
+  .reveal--lines.is-in .line > span { transform: none; }
+
   @media (prefers-reduced-motion: reduce) {
     .reveal { opacity: 1 !important; transform: none !important; transition: none; }
+    .reveal--lines .line > span { transform: none !important; transition: none; }
     .marquee__row { animation: none; }
-    .fab__pulse, .nav__mark { animation: none; }
+    .fab__pulse, .nav__mark, .estado__dot { animation: none; }
     .carousel__track.is-animating { transition-duration: .01ms; }
     .carousel__bar span.is-running { animation: none; }
     *, *::before, *::after { scroll-behavior: auto !important; }

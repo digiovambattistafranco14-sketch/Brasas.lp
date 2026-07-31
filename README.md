@@ -45,10 +45,40 @@ Si cambia, buscá y reemplazá `5491144228555` (aparece en el nav, el hero, la c
 bloque de datos, el pie, el botón flotante y el JSON-LD).
 Los enlaces llevan un mensaje precargado con `?text=` — editalo si querés otro.
 
+## Cartel de "abierto / cerrado"
+
+En el hero y en el bloque de datos hay un cartel que dice si el local está abierto
+**en este momento**, y si no, cuándo abre. Se calcula en hora de Argentina, así que
+dice la verdad aunque lo miren desde otro país.
+
+⚠️ **Si cambia el horario hay que tocarlo en tres lugares:**
+
+1. `assets/js/main.js`, constante `HORARIO` arriba de todo (`dias: [4, 5, 6]` son
+   jueves, viernes y sábado; `0` sería domingo).
+2. El bloque `openingHoursSpecification` del JSON-LD, en el `<head>` de `index.html`.
+3. Los textos visibles: el bloque `.datos` y las etiquetas del hero.
+
+Si el JavaScript falla o está desactivado, el cartel **no aparece**. Es a propósito:
+mejor no decir nada que decir un horario equivocado.
+
+## Vista previa al compartir el link
+
+`assets/img/og.jpg` (1200×630) es la imagen que se ve cuando pasás el link por
+WhatsApp o lo pegás en Instagram. Está armada con la misma tipografía y los mismos
+colores del sitio.
+
+**Cuando tengas el dominio de Netlify**, cambiá la etiqueta `og:image` del `<head>`
+por la URL completa (`https://tu-dominio.netlify.app/assets/img/og.jpg`). Con la ruta
+relativa algunos servicios la levantan y otros no; con la absoluta la levantan todos.
+Hay un comentario en el HTML marcando el lugar exacto.
+
 ## Carrusel
 
 - Tiene 4 fotos: picada, carne al disco, empanadas y sanguchito. La del parrillero no
   está para no repetir la del hero.
+- Las miniaturas de abajo clonan el `<picture>` de cada foto, así que el navegador
+  elige el mismo archivo que ya descargó: **no suman ni un byte**.
+- Con mouse, sobre las fotos aparece un cursor propio que dice "arrastrá".
 - Avanza solo cada 4,8 s con una transición suave (se cambia en `data-interval` del
   `<div class="carousel">`).
 - Flechas, puntitos, teclado (← →) y arrastre con el dedo o el mouse.

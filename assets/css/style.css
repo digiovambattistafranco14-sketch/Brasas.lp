@@ -637,37 +637,6 @@
     }
   }
 
-  /* — cursor propio sobre el carrusel (solo con mouse) — */
-  .dragcur { display: none; }
-  @media (hover: hover) and (pointer: fine) {
-    .carousel__frame { cursor: none; }
-    .dragcur {
-      display: grid; place-items: center;
-      position: absolute; top: 0; left: 0;
-      width: 5.4rem; height: 5.4rem;
-      margin: -2.7rem 0 0 -2.7rem;
-      border-radius: 50%;
-      background: color-mix(in oklab, var(--ember) 88%, transparent);
-      backdrop-filter: blur(2px);
-      pointer-events: none; z-index: 3;
-      opacity: 0;
-      /* la posición va en `translate` y el tamaño en `scale`, propiedades
-         independientes: así el JS mueve el cursor sin pisar la animación */
-      scale: .4;
-      transition: opacity .3s var(--ease), scale .45s var(--ease-out);
-    }
-    .dragcur span {
-      font-family: var(--f-mono);
-      font-size: .62rem; font-weight: 700;
-      letter-spacing: .12em; text-transform: uppercase;
-      color: #fff;
-    }
-    .carousel.is-hovered .dragcur { opacity: 1; scale: 1; }
-    .carousel.is-hovered.is-dragging .dragcur { scale: .84; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .dragcur { transition: none; }
-  }
 }
 
 /* ---------- 8b. Banda de declaración ---------- */

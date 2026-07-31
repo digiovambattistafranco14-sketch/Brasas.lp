@@ -139,7 +139,6 @@
   const elTotal = document.querySelector('[data-carousel-total]');
   const caption = document.getElementById('carousel-caption');
   const thumbsBox = document.querySelector('.gallery__thumbs');
-  const dragcur = root.querySelector('[data-dragcur]');
   const bar = root.querySelector('[data-carousel-progress]');
   const DUR = Number(root.dataset.interval) || 4800;
   root.style.setProperty('--dur', DUR + 'ms');
@@ -311,33 +310,11 @@
     visible ? (play(), restartProgress()) : stop();
   }, { threshold: 0.25, rootMargin: '400px 0px' }).observe(root);
 
-  /* ---------- Cursor propio (solo mouse) ---------- */
-  if (dragcur && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-    let pendiente = null;
-    const mover = (e) => {
-      const r = root.getBoundingClientRect();
-      pendiente = [e.clientX - r.left, e.clientY - r.top];
-      requestAnimationFrame(() => {
-        if (!pendiente) return;
-        dragcur.style.translate = `${pendiente[0]}px ${pendiente[1]}px`;
-        pendiente = null;
-      });
-    };
-    frame.addEventListener('pointerenter', (e) => {
-      if (e.pointerType !== 'mouse') return;
-      mover(e);
-      root.classList.add('is-hovered');
-    });
-    frame.addEventListener('pointermove', mover, { passive: true });
-    frame.addEventListener('pointerleave', () => root.classList.remove('is-hovered'));
-  }
-
   /* ---------- Arrastre / swipe ---------- */
   frame.addEventListener('pointerdown', (e) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     dragging = true; axis = null; deltaX = 0;
     startX = e.clientX; startY = e.clientY;
-    root.classList.add('is-dragging');
     stop();
     track.classList.remove('is-animating');
     bar?.classList.remove('is-running');
@@ -362,7 +339,6 @@
   });
 
   const endDrag = () => {
-    root.classList.remove('is-dragging');
     if (!dragging) return;
     dragging = false;
     const threshold = Math.min(90, width * 0.16);

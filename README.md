@@ -78,7 +78,6 @@ Hay un comentario en el HTML marcando el lugar exacto.
   está para no repetir la del hero.
 - Las miniaturas de abajo clonan el `<picture>` de cada foto, así que el navegador
   elige el mismo archivo que ya descargó: **no suman ni un byte**.
-- Con mouse, sobre las fotos aparece un cursor propio que dice "arrastrá".
 - Avanza solo cada 4,8 s con una transición suave (se cambia en `data-interval` del
   `<div class="carousel">`).
 - Flechas, puntitos, teclado (← →) y arrastre con el dedo o el mouse.
